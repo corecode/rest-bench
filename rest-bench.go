@@ -3,14 +3,18 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io"
+	"io/ioutil"
 	"net/http"
 	"strings"
 	"time"
 )
 
 func doRequests(url string, request string, resultCh chan<- bool) {
+	client := &http.Client{}
+
 	for {
-		resp, err := http.Post(url, "application/json", strings.NewReader(request))
+		resp, err := client.Post(url, "application/json", strings.NewReader(request))
 		if err != nil {
 			resultCh <- false
 			fmt.Printf("error: %v\n", err)
@@ -22,6 +26,7 @@ func doRequests(url string, request string, resultCh chan<- bool) {
 		}
 
 		if resp != nil {
+			io.Copy(ioutil.Discard, resp.Body)
 			resp.Body.Close()
 		}
 	}
