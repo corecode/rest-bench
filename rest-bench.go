@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"math"
 	"net/http"
 	"strings"
 	"time"
@@ -48,6 +49,8 @@ func main() {
 	start := time.Now()
 	success := 0
 	fail := 0
+	expavg := 0.0
+	wperiod := 60.0
 	for {
 		res := <-results
 		if res {
@@ -58,7 +61,11 @@ func main() {
 
 		elapsed := time.Since(start)
 		if elapsed >= reportPeriod {
-			fmt.Printf("success: %v fail: %v\n", float64(success)/elapsed.Seconds(), float64(fail)/elapsed.Seconds())
+			alpha := 1 - math.Exp(-elapsed.Seconds()/wperiod)
+			expavg = alpha*float64(success) + (1-alpha)*expavg
+			fmt.Printf("%.1fs expavg: %.1f success: %.1f fail: %.1f\n",
+				wperiod, expavg,
+				float64(success)/elapsed.Seconds(), float64(fail)/elapsed.Seconds())
 			success = 0
 			fail = 0
 			start = time.Now()
