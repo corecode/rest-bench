@@ -59,7 +59,8 @@ func main() {
 			fail++
 		}
 
-		elapsed := time.Since(start)
+		now := time.Now()
+		elapsed := now.Sub(start)
 		if elapsed >= reportPeriod {
 			alpha := 1 - math.Exp(-elapsed.Seconds()/wperiod)
 			expavg = alpha*float64(success) + (1-alpha)*expavg
@@ -68,7 +69,7 @@ func main() {
 				float64(success)/elapsed.Seconds(), float64(fail)/elapsed.Seconds())
 			success = 0
 			fail = 0
-			start = time.Now()
+			start = now
 		}
 	}
 }
