@@ -51,6 +51,10 @@ func main() {
 	fail := 0
 	expavg := 0.0
 	wperiod := 60.0
+	expend := start.Add(time.Duration(wperiod / 10.0 * float64(time.Second)))
+	expstarted := false
+	expstartsum := 0
+	expstartdur := 0.0 * time.Second
 	for {
 		res := <-results
 		if res {
@@ -62,11 +66,22 @@ func main() {
 		now := time.Now()
 		elapsed := now.Sub(start)
 		if elapsed >= reportPeriod {
-			alpha := 1 - math.Exp(-elapsed.Seconds()/wperiod)
+			if !expstarted {
+				if now.Before(expend) {
+					expstartdur += elapsed
+					expstartsum += success
+				} else {
+					expavg = float64(expstartsum) / expstartdur.Seconds()
+					expstarted = true
+				}
+			}
+
+			alpha := 1.0 - math.Exp(-elapsed.Seconds()/wperiod)
 			expavg = alpha*float64(success) + (1-alpha)*expavg
-			fmt.Printf("%.1fs expavg: %.1f success: %.1f fail: %.1f\n",
+			fmt.Printf("%.1fs expavg: %.1f success: %.1f fail: %.1f dt: %.2f succ_raw: %d alpha: %v\n",
 				wperiod, expavg,
-				float64(success)/elapsed.Seconds(), float64(fail)/elapsed.Seconds())
+				float64(success)/elapsed.Seconds(), float64(fail)/elapsed.Seconds(),
+				elapsed.Seconds(), success, alpha)
 			success = 0
 			fail = 0
 			start = now
